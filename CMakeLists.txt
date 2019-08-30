@@ -13,7 +13,7 @@ if(CCACHE_PROGRAM)
   set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
 endif()
 
-project(OpenStudio_Test_QtIFW_Error_with_Space VERSION 1.0.0)
+project(Test_QtIFW_Error_with_Space VERSION 1.0.0)
 
 # The PROJECT_SOURCE_DIR here is OpenStudioApplication/, which we will use instead of using CMAKE_SOURCE_DIR
 set(PROJECT_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -128,6 +128,68 @@ if(UNIX)
   endif()
 endif()
 
-add_executable(test
+###############################################################################
+#                              E X E C U T A B L E                            #
+###############################################################################
+
+set(target_name OpenStudioApp)
+add_executable(${target_name}
+  WIN32
+  MACOSX_BUNDLE
   main.cpp
 )
+
+
+###############################################################################
+#                           I N S T A L L A T I O N                           #
+###############################################################################
+
+# Default the Binary generators: problem is that none of the CPACK_BINARY_<GenName> will show up in CMakeCache,
+# which makes it less clear what will happen in terms of package generation, but it's a dummy example so I don't care!
+set(CPACK_GENERATOR "IFW;")
+
+# Turn off source generators
+# Need a list, which can't be empty, but not have sensible defined value. So a list of two empty element works as
+# a workaround
+set(CPACK_SOURCE_GENERATOR ";")
+
+set(DESTDIR "Test Install With Spaces")
+
+# set(CPACK_IFW_TARGET_DIRECTORY "@HomeDir@/${DESTDIR}/")
+# set(CPACK_IFW_TARGET_DIRECTORY "${CMAKE_SOURCE_DIR}/test-install/${DESTDIR}/")
+set(CPACK_IFW_TARGET_DIRECTORY "${PROJECT_BINARY_DIR}/test-install/${DESTDIR}/")
+
+# Remove the test folder
+execute_process(COMMAND ${CMAKE_COMMAND} -E remove_directory "${PROJECT_BINARY_DIR}/test-install/")
+
+# Have it install the full directory
+install(
+  DIRECTORY ${CMAKE_SOURCE_DIR}/resources/
+  DESTINATION Resources
+  COMPONENT Resources
+)
+
+install(
+  TARGETS ${target_name}
+  DESTINATION .
+  COMPONENT "OpenStudioApp"
+)
+
+include(CPack)
+include(CPackIFW)
+
+cpack_add_component(Resources
+  DISPLAY_NAME "Application Resources"
+  DESCRIPTION "Resource Files used by the Application"
+)
+
+cpack_add_component(OpenStudioApp
+  DISPLAY_NAME "Entire program"
+  DESCRIPTION "COUCOU")
+
+cpack_ifw_configure_component(OpenStudioApp
+  DEPENDS Resources
+  SCRIPT install_operations.qs
+)
+
+

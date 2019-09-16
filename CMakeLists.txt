@@ -134,7 +134,7 @@ endif()
 
 set(target_name OpenStudioApp)
 add_executable(${target_name}
-  WIN32
+  # WIN32
   MACOSX_BUNDLE
   main.cpp
 )

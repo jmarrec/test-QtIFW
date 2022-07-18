@@ -1,0 +1,84 @@
+name: C++ CI
+
+on:
+  push:
+    branches: [ main, mac ]
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # fail-fast: Default is true, switch to false to allow one platform to fail and still run others
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        include:
+        - os: ubuntu-latest
+          PLATFORM_NAME: Linux
+          BINARY_EXT: run
+        - os: macos-latest
+          PLATFORM_NAME: Darwin
+          BINARY_EXT: dmg
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install deps
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          echo "Using apt to install ninja"
+          sudo apt update
+          sudo apt -y -qq install ninja-build libxkbcommon-x11-0 xorg-dev libgl1-mesa-dev libxcb-shape0
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          echo "Using brew to install ninja"
+          brew install ninja
+          echo "Setting MACOSX_DEPLOYMENT_TARGET to 10.15"
+          echo "MACOSX_DEPLOYMENT_TARGET=10.15" >> $GITHUB_ENV
+          echo "Adding SDKROOT to GITHUB_ENV"
+          echo "SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk" >> $GITHUB_ENV
+        fi;
+
+        mkdir build
+
+    - name: Setup QtIFW 4.x
+      uses: jmarrec/setup-qtifw@v1
+      with:
+        qtifw-version: '4.3.x'
+
+    - name: CMake configure
+      working-directory: ./build
+      shell: bash
+      run: |
+        set -x
+        cmake -G Ninja -DCMAKE_BUILD_TYPE:STRING=Release -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON -DCPACK_BINARY_IFW:BOOL=ON ../
+
+    - name: Build
+      working-directory: ./build
+      shell: bash
+      run: |
+        set -x
+        ninja
+
+    - name: Build package
+      working-directory: ./build
+      shell: bash
+      run: |
+        set -x
+        ninja package
+
+    - name: Upload Binary installer to release
+      if: contains(github.ref, 'refs/tags')
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: build/_CPack_Packages/${{ matrix.PLATFORM_NAME }}/IFW/*.${{ matrix.BINARY_EXT }}
+        tag: ${{ github.ref }}
+        overwrite: true
+        file_glob: true
+

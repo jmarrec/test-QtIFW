@@ -28,18 +28,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Setup QtIFW 4.x
-      uses: jmarrec/setup-qtifw@v1
-      with:
-        qtifw-version: '4.3.x'
-
     - name: Install deps
       shell: bash
       run: |
         if [ "$RUNNER_OS" == "Linux" ]; then
           echo "Using apt to install ninja"
           sudo apt update
-          sudo apt -y -qq install ninja-build libxkbcommon-x11-0 xorg-dev libgl1-mesa-dev
+          sudo apt -y -qq install ninja-build libxkbcommon-x11-0 xorg-dev libgl1-mesa-dev libxcb-shape0
         elif [ "$RUNNER_OS" == "macOS" ]; then
           echo "Using brew to install ninja"
           brew install ninja
@@ -50,6 +45,11 @@ jobs:
         fi;
 
         mkdir build
+
+    - name: Setup QtIFW 4.x
+      uses: jmarrec/setup-qtifw@v1
+      with:
+        qtifw-version: '4.3.x'
 
     - name: CMake configure
       working-directory: ./build

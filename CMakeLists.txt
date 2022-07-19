@@ -175,6 +175,8 @@ install(
   COMPONENT "OpenStudioApp"
 )
 
+install(FILES "requirements.txt" DESTINATION . COMPONENT "PythonTools")
+
 include(CPack)
 include(CPackIFW)
 
@@ -192,4 +194,13 @@ cpack_ifw_configure_component(OpenStudioApp
   SCRIPT install_operations.qs
 )
 
+cpack_add_component(PythonTools
+  DISPLAY_NAME "Install Python Tools"
+  DESCRIPTION "This will pip install a few things to your preferred system python"
+)
 
+cpack_ifw_configure_component(PythonTools
+  DEPENDS Resources
+  SCRIPT python.qs
+  USER_INTERFACES pythonwidget.ui
+)
